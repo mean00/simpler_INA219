@@ -80,14 +80,14 @@ void loop(void)
   sprintf(stA,"uA per bit=%d",sensor219->getResolutionMicroAmp()); // get accuracy with current scale
   Serial.println(stA);
   
-  
+  sprintf(stA,"mA =%d",current); // get accuracy with current scale
+  Serial.println(stA);
     
-  float2str(stA,((float)(current)),"mA");  
+ 
   float2str(stV,busVoltage,"V");  
   Serial.println(stV);
   Serial.println("-----------------\n");
-  Serial.println(stA);
-  Serial.println("-----------------\n");
+ 
   
   int raw=sensor219->getShuntVoltage_raw();
   sprintf(stA,"RAW = %d\n",(int)raw);
