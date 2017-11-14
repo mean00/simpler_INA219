@@ -244,7 +244,7 @@ void simpler_INA219::autoZero()
         ina219_currentScale=i;
         reconfigure();
         int val=0;
-        for(int i=0;i<8;i++)
+        for(int j=0;j<8;j++)
         {
             val+=getShuntVoltage_raw();
             delay(1);
