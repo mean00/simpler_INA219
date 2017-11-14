@@ -63,6 +63,7 @@ simpler_INA219::simpler_INA219(uint8_t addr,int shunt)
   for(int i=0;i<4;i++)
     ina219_zeros[i]=0;
   multiSampling=0;
+  highVoltageScale=1;
   reconfigure();
 }
 
@@ -120,7 +121,7 @@ void simpler_INA219::wireReadRegister(uint8_t reg, uint16_t *value)
 void simpler_INA219::reconfigure(void)
 {
   // Set Config register to take into account the settings above
-  uint16_t config = INA219_CONFIG_BVOLTAGERANGE_32V |
+  uint16_t config = INA219_CONFIG_BVOLTAGERANGE_32V*highVoltageScale |
                     scaler[ina219_currentScale].registerValue |
                     INA219_CONFIG_BADCRES_12BIT |
                     INA219_CONFIG_SADCRES_12BIT_1S_532US |
@@ -176,9 +177,29 @@ int simpler_INA219::getShuntVoltage_raw()
     @brief  Gets the shunt voltage in volts
 */
 /**************************************************************************/
-float simpler_INA219::getBusVoltage_V() {
+float simpler_INA219::getBusVoltage_V() 
+{
   int16_t value = getBusVoltage_raw();
-  return value * 0.001; // 10mv / tick
+  
+  float r=(float)value*0.001; // 1mv / tick
+  if(highVoltageScale) 
+  {
+      if(r<13.)
+      {
+          highVoltageScale=0; // switch to low voltage
+          reconfigure();           
+      }
+  }
+  // low 16 v scale, more accurate ?
+  else 
+  {
+      if(r>14.)
+      {
+           highVoltageScale=1;
+           reconfigure();           // next one will be more accurate       
+      }
+  }
+  return r; 
 }
 
 /**************************************************************************/

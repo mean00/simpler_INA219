@@ -78,4 +78,5 @@ class simpler_INA219
    int    getCurrentScaler() {return ina219_currentScale;}
   int16_t getShuntVoltage_raw(void);
   int     getResolutionMicroAmp();
+  bool    highVoltageScale;
 };
