@@ -201,10 +201,11 @@ float simpler_INA219::getBusVoltage_V()
 int simpler_INA219::getOneCurrent_mA() {
 again:    
   int raw=getShuntVoltage_raw();  
+  int araw=abs(raw);
   int range=0;
-  if(raw>15000) range=3;
-  else if(raw>7000) range=2;
-  else if(raw>3000) range=1;
+  if(araw>15000) range=3;
+  else if(araw>7000) range=2;
+  else if(araw>3000) range=1;
   
   if(range!=ina219_currentScale)
   {
