@@ -16,9 +16,13 @@ void setup(void)
 {
       
   Serial.begin(57600);    
-  Serial.print("Start");
-  Serial.print("Sensor initialization\n");
-  sensor219=new simpler_INA219(INA219_ADDRESS,20);  // we use 20 mOhm shunt
+  delay(2000);
+  Serial.println("Start");
+  Wire.begin();
+  Serial.println("Sensor initialization");
+  sensor219=new simpler_INA219(INA219_ADDRESS,100,&Wire);  // we use 100 mOhm shunt
+  Serial.println("Sensor initialization -2");
+
   sensor219->setMultiSampling(2);                   // 4 samples
   Serial.println("Setup done\n");  
 #if 0 // if you want to do autozero...
