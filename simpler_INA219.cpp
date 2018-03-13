@@ -118,9 +118,11 @@ void simpler_INA219::wireReadRegister(uint8_t reg, uint16_t *value)
  */
 void simpler_INA219::reconfigure(void)
 {   
+#if 0
   // Reset chip
   wireWriteRegister(INA219_REG_CONFIG,INA219_CONFIG_RESET);
   delay(1);
+#endif
   // Set Config register to take into account the settings above
   uint16_t config = INA219_CONFIG_BVOLTAGERANGE_32V*highVoltageScale |
                     scaler[ina219_currentScale].registerValue |
