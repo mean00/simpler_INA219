@@ -38,8 +38,7 @@
 class simpler_INA219
 {
  public:
-           simpler_INA219(uint8_t addr = INA219_ADDRESS, int shutResistorMilliOhm=100); // 0.1 ohm by default, like Adafruit board
-  void     begin(void);
+           simpler_INA219(uint8_t addr = INA219_ADDRESS, int shutResistorMilliOhm=100,TwoWire *w=NULL); // 0.1 ohm by default, like Adafruit board
   float    getBusVoltage_V(void);
   int      getShuntVoltage_mV(void);
   int      getCurrent_mA(void);
@@ -65,6 +64,7 @@ class simpler_INA219
   int     ina219_zeros[4];
   float   multiplier;
   int     multiSampling;
+  TwoWire *_w;
   
   
  protected: 
@@ -73,10 +73,11 @@ class simpler_INA219
   void    wireReadRegister(uint8_t reg, uint16_t *value);
   int16_t getBusVoltage_raw(void);
   int     getOneCurrent_mA(void);
+  void    setScaler(int nw) ;
  public:  
    // These are for debug and calibration
-   int    getCurrentScaler() {return ina219_currentScale;}
-  int16_t getShuntVoltage_raw(void);
+  int     getCurrentScaler() {return ina219_currentScale;}
+  int     getShuntVoltage_raw(void);
   int     getResolutionMicroAmp();
   bool    highVoltageScale;
 };
