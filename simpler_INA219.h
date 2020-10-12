@@ -42,7 +42,7 @@ class simpler_INA219
   float    getBusVoltage_V(void);
   int      getShuntVoltage_mV(void);
   int      getCurrent_mA(void);
-  int      setMultiSampling(int v){multiSampling=v;} // this is 2^n sample : 0=>1 sample, 1=> 2 sample....4=>16 samples
+  void     setMultiSampling(int v){multiSampling=v;} // this is 2^n sample : 0=>1 sample, 1=> 2 sample....4=>16 samples
   void     autoZero(); // Call this automatically set the zero offset, BE 100% SURE NO CURRENT IS FLOWING !
         
   
