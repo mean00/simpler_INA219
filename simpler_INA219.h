@@ -17,15 +17,9 @@
     v1.0  - First release
 */
 /**************************************************************************/
-
-#if ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include "WProgram.h"
-#endif
-
-#include <Wire.h>
-
+#pragma once
+#include "lnArduino.h"
+#include "lnI2C.h"
 #define INA219_ADDRESS                         (0x40)    // 1000000 (A0+A1=GND)
 
 
@@ -38,7 +32,7 @@
 class simpler_INA219
 {
  public:
-           simpler_INA219(uint8_t addr = INA219_ADDRESS, int shutResistorMilliOhm=100,TwoWire *w=NULL); // 0.1 ohm by default, like Adafruit board
+           simpler_INA219(lnI2C *i2c, uint8_t addr = INA219_ADDRESS, int shutResistorMilliOhm=100); // 0.1 ohm by default, like Adafruit board
   float    getBusVoltage_V(void);
   int      getShuntVoltage_mV(void);
   int      getCurrent_mA(void);
@@ -64,7 +58,7 @@ class simpler_INA219
   int     ina219_zeros[4];
   float   multiplier;
   int     multiSampling;
-  TwoWire *_w;
+  lnI2C   *_i2c;
   
   
  protected: 

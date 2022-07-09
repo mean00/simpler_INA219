@@ -21,11 +21,7 @@
     v1.0 - First release
 */
 /**************************************************************************/
-#include "Arduino.h"
 
-
-
-#include <Wire.h>
 #include "simpler_INA219.h"
 #include "simpler_INA219_internal.h"
 
@@ -54,7 +50,7 @@ static const ina219Scaler scaler[4]=
     @brief  Instantiates a new INA219 class
 */
 /**************************************************************************/
-simpler_INA219::simpler_INA219(uint8_t addr,int shunt,TwoWire *w) 
+simpler_INA219::simpler_INA219( lnI2C *i2c, uint8_t addr, int shunt) 
 {
   ina219_i2caddr = addr;
   ina219_shuntValueMillOhm=shunt;  
@@ -63,9 +59,8 @@ simpler_INA219::simpler_INA219(uint8_t addr,int shunt,TwoWire *w)
     ina219_zeros[i]=0;
   multiSampling=0;
   highVoltageScale=0;
-  _w=w;
-  if(!_w)
-      _w=&Wire;
+  xAssert(i2c);
+  _i2c=i2c;
   reconfigure();
 }
 /**
@@ -85,12 +80,9 @@ void simpler_INA219::setScaler(int nw)
 */
 /**************************************************************************/
 void simpler_INA219::wireWriteRegister (uint8_t reg, uint16_t value)
-{
-  _w->beginTransmission(ina219_i2caddr);
-  _w->write(reg);                       // Register
-  _w->write((value >> 8) & 0xFF);       // Upper 8-bits
-  _w->write(value & 0xFF);              // Lower 8-bits
-  _w->endTransmission();
+{   
+    uint8_t datas[3]={reg,(uint8_t)(value>>8),(uint8_t)(value&0xff)};
+    _i2c->write(3,datas);
 }
 
 /**************************************************************************/
@@ -100,17 +92,10 @@ void simpler_INA219::wireWriteRegister (uint8_t reg, uint16_t value)
 /**************************************************************************/
 void simpler_INA219::wireReadRegister(uint8_t reg, uint16_t *value)
 {
-
-  _w->beginTransmission(ina219_i2caddr);  
-  _w->write(reg);                       // Register
-  _w->endTransmission();
-  
-  delay(1); // Max 12-bit conversion time is 586us per sample
-
-  _w->requestFrom(ina219_i2caddr, (uint8_t)2);  
-// Shift values to create properly formed integer
-  *value = ((_w->read() << 8) | _w->read());
-  
+uint8_t datas[2];
+    _i2c->write(1,&reg);
+    _i2c->read(2, datas);
+    *value=(datas[0]<<8)+datas[1];
 }
 
 /**
@@ -200,10 +185,12 @@ float simpler_INA219::getBusVoltage_V()
             config settings and current LSB
 */
 /**************************************************************************/
-int simpler_INA219::getOneCurrent_mA() {
+int simpler_INA219::getOneCurrent_mA() 
+{
 again:    
   int raw=getShuntVoltage_raw();  
-  int araw=abs(raw);
+  int araw=raw;
+  if(araw<0) araw=-raw;
   int range=0;
   if(araw>15000) range=3;
   else if(araw>7000) range=2;
@@ -220,7 +207,9 @@ again:
   valueDec*=multiplier;
   return (int)valueDec;
 }
-
+/**
+ * 
+ */
 int simpler_INA219::getCurrent_mA() 
 {
     if(!multiSampling) return getOneCurrent_mA();
@@ -265,7 +254,4 @@ void simpler_INA219::autoZero()
     }
     setScaler(old);
 }
-
-#if ARDUINO < 100
-    #error "RECENT ARDUINO SETUP NEEDED"
-#endif
+// EOF
