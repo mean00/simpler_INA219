@@ -1,7 +1,7 @@
 simpler_INA219
 ===============
 
-This is a INA219 sensor driver for arduino, derived from the ADAFruit one.
+This is a INA219 sensor driver for lnArduino, derived from the ADAFruit one.
 It is quite different though.
 
 The INA219 setup is complicated because the driver lets the INA219 compute automatically the current and power.

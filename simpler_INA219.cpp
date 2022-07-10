@@ -82,7 +82,7 @@ void simpler_INA219::setScaler(int nw)
 void simpler_INA219::wireWriteRegister (uint8_t reg, uint16_t value)
 {   
     uint8_t datas[3]={reg,(uint8_t)(value>>8),(uint8_t)(value&0xff)};
-    _i2c->write(3,datas);
+    _i2c->write(ina219_i2caddr,3,datas);
 }
 
 /**************************************************************************/
@@ -93,8 +93,8 @@ void simpler_INA219::wireWriteRegister (uint8_t reg, uint16_t value)
 void simpler_INA219::wireReadRegister(uint8_t reg, uint16_t *value)
 {
 uint8_t datas[2];
-    _i2c->write(1,&reg);
-    _i2c->read(2, datas);
+    _i2c->write(ina219_i2caddr,1,&reg);
+    _i2c->read(ina219_i2caddr,2, datas);
     *value=(datas[0]<<8)+datas[1];
 }
 
