@@ -58,7 +58,7 @@ protected:
 protected: 
   void    reconfigure(void);
   void    writeRegister(uint8_t reg, uint16_t value);
-  void    readRegister(uint8_t reg, uint16_t *value);
+  uint16_t readRegister(uint8_t reg);
   int16_t getBusVoltage_raw(void);
   int     getOneCurrent_mA(void);
   void    setScaler(PGA nw)  {_currentIScale=nw; }
@@ -69,7 +69,7 @@ public: // for debug
   int     getShuntVoltage_mV(void);  /// Returns voltage across the shunt
 
 public:  // normal API
-           simpler_INA219(lnI2C *i2c, uint8_t addr = INA219_ADDRESS, int shutResistorMilliOhm=100); // 0.1 ohm by default, like Adafruit board
+           simpler_INA219(lnI2C *i2c, int maxCurrentinA=4, uint8_t addr = INA219_ADDRESS, int shutResistorMilliOhm=100); // 0.1 ohm by default, like Adafruit board
   float    getVoltage_V(void);     /// Returns bus voltage in volt
   int      getCurrent_mA(void);       /// Returns current in mA, /!\ we dont deal with the sign
 

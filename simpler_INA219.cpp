@@ -33,7 +33,7 @@
     @brief  Instantiates a new INA219 class
 */
 /**************************************************************************/
-simpler_INA219::simpler_INA219( lnI2C *i2c, uint8_t addr, int shunt) 
+simpler_INA219::simpler_INA219(  lnI2C *i2c, int maxCurrentinA,uint8_t addr, int shunt) 
 {
    xAssert(i2c);
   _i2c=i2c;
@@ -41,7 +41,7 @@ simpler_INA219::simpler_INA219( lnI2C *i2c, uint8_t addr, int shunt)
   _shuntValueMillOhm=shunt;  
   _multiSampling=1;
   _highVoltageScale=false;
-  setScaler(PGA8);
+  
   
   for(int i=0;i<4;i++)
     _zeros[i]=0;
@@ -49,13 +49,22 @@ simpler_INA219::simpler_INA219( lnI2C *i2c, uint8_t addr, int shunt)
   // 12 bits ADC on a 40 mv Range
   _multiplier=40./(float)(_shuntValueMillOhm);
   _multiplier/=4.096;
-  //  compute cal
-  // 
+  // select right PGA
+  int maxShuntVoltage=shunt*maxCurrentinA; // result in mv
+  PGA divider;
+  if(maxShuntVoltage>320) {xAssert(0);} // wrong configuration
+  else if(maxShuntVoltage>160) divider=PGA8;
+    else if(maxShuntVoltage>80) divider=PGA4;
+        else if(maxShuntVoltage>40) divider=PGA2;
+            else divider=PGA1;
+  setScaler(divider);
+
+
+  //  compute cal  
   float calf=0.04096;
   calf/=(float)shunt/1000.;
-  calf/=4./32768.; // max 4A
+  calf/=(float)maxCurrentinA/32768.; // max 4A
   int cal=calf;
-  
   
   writeRegister(INA219_REG_CALIBRATION,cal); // 4A max, 20 Ohm
   reconfigure();
@@ -76,12 +85,12 @@ void simpler_INA219::writeRegister (uint8_t reg, uint16_t value)
     @brief  Reads a 16 bit values over I2C
 */
 /**************************************************************************/
-void simpler_INA219::readRegister(uint8_t reg, uint16_t *value)
+uint16_t simpler_INA219::readRegister(uint8_t reg)
 {
 uint8_t datas[2];
     _i2c->write(_i2cAdr,1,&reg);
     _i2c->read(_i2cAdr,2, datas);
-    *value=(datas[0]<<8)+datas[1];
+    return (datas[0]<<8)+datas[1];
 }
 
 /**
@@ -93,8 +102,8 @@ void simpler_INA219::reconfigure(void)
   uint16_t config = INA219_CONFIG_BVOLTAGERANGE_32V*_highVoltageScale |
                     INA_PGA(_currentIScale) |
                     INA219_CONFIG_MODE_SANDBVOLT_CONTINUOUS |
-                    (3<<3) | // both I & V = 12 bits
-                    (3<<7)                    
+                    (10<<3) | // both I & V = 12 bits, 4 samples
+                    (10<<7)                    
                     ;
   writeRegister(INA219_REG_CONFIG, config);
 }
@@ -108,8 +117,7 @@ void simpler_INA219::reconfigure(void)
 int16_t simpler_INA219::getBusVoltage_raw() 
 {
   uint16_t value;
-  readRegister(INA219_REG_BUSVOLTAGE, &value);  
-  return (int16_t)(value );
+  return (int16_t)(readRegister(INA219_REG_BUSVOLTAGE));
 }
 
 /**
@@ -164,12 +172,18 @@ static const uint16_t pgaMask[4]={0x8FFF,0x9FFF,0xBFff,0xFFFF};
 int16_t simpler_INA219::getShuntVoltage_raw() 
 {
   uint16_t value;
-  readRegister(INA219_REG_SHUNTVOLTAGE, &value);
+  value=readRegister(INA219_REG_SHUNTVOLTAGE);
   value &= pgaMask[_currentIScale]; // remove the multiple sign
 #warning Negative current is not handled properly!
   return (int16_t) value;
 }
 
+const int MAX_SCALE[4]={
+    (1<<12)-1,
+    (1<<13)-1,
+    (1<<14)-1,
+    (1<<15)-1,
+};
 /**************************************************************************/
 /*! 
     @brief  Gets the current value in mA, taking into account the
@@ -177,67 +191,16 @@ int16_t simpler_INA219::getShuntVoltage_raw()
 */
 /**************************************************************************/
 
-int MAX_SCALE[4]={
-    (1<<12)-1,
-    (1<<13)-1,
-    (1<<14)-1,
-    (1<<15)-1,
-};
-
-int simpler_INA219::getOneCurrent_mA() 
+int simpler_INA219::getCurrent_mA() 
 {
-again:    
-    uint16_t current;
-    
-  readRegister(INA219_REG_CURRENT,&current);
+  uint16_t current=  readRegister(INA219_REG_CURRENT);
 
-  if(current & (1<<15))
+  if(current & (1<<15)) // sign
   {
     return 0;
   }
-  return (current+5)/10;
-
-  int cur=simpler_INA219::getBusVoltage_raw();
-  Logger("scale = %d Overflow = %x Ready= %x\n",_currentIScale, cur & 1,cur & 2);
-  uint16_t aa ;
-  readRegister(4,&aa);
-  Logger("Internal current %d\n",aa);
-
-
-  int raw=getShuntVoltage_raw();    
-  bool redo=false;
-
-  Logger("Raw %d 0x%x\n",raw,raw);  
-#if 0
-  if(raw>MAX_SCALE[_currentIScale] && _currentIScale!=PGA8)
-  {
-    _currentIScale=(simpler_INA219::PGA)(_currentIScale+1);
-    redo=true;
-  }
-  if(redo && raw<(MAX_SCALE[_currentIScale]>>1) && _currentIScale!=PGA1)
-  {
-    _currentIScale=(simpler_INA219::PGA)(_currentIScale-1);
-    redo=true;
-  }
-  if(redo)
-  {
-    reconfigure();
-    xDelay(10);
-    goto again;
-  }
-#endif  
-  raw-=_zeros[_currentIScale];  
- 
-  float valueDec=raw;
-  valueDec*=_multiplier;
-  return (int)valueDec;
-}
-/**
- * \fn getCurrent_mA
- */
-int simpler_INA219::getCurrent_mA() 
-{
-    return getOneCurrent_mA();   
+  current= (current+5)/10;
+  return current;
 }
 
 /**
