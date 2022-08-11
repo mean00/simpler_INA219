@@ -57,6 +57,7 @@ simpler_INA219::simpler_INA219(  lnI2C *i2c, int maxCurrentinA,uint8_t addr, int
     else if(maxShuntVoltage>80) divider=PGA4;
         else if(maxShuntVoltage>40) divider=PGA2;
             else divider=PGA1;
+
   setScaler(divider);
 
 
@@ -200,9 +201,18 @@ int simpler_INA219::getCurrent_mA()
     return 0;
   }
   current= (current+5)/10;
+  if(current>_zeros[_currentIScale])
+    current-=_zeros[_currentIScale];
+  if(current<6) return 0;
   return current;
 }
-
+/**
+ * 
+ */
+void simpler_INA219::setZero(int offetMa)
+{
+     for(int i=0;i<4;i++) _zeros[i]=offetMa;
+}
 /**
  * \fn autoZero
  */
@@ -217,9 +227,7 @@ void simpler_INA219::autoZero()
         int val=0;
         for(int j=0;j<8;j++)
         {
-            int raw=getShuntVoltage_raw();
-            raw<<=_currentIScale; 
-            val+=raw;
+            val+=  readRegister(INA219_REG_CURRENT);
             xDelay(10);
         }
         val=val/8;

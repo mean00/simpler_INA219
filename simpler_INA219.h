@@ -72,6 +72,7 @@ public:  // normal API
            simpler_INA219(lnI2C *i2c, int maxCurrentinA=4, uint8_t addr = INA219_ADDRESS, int shutResistorMilliOhm=100); // 0.1 ohm by default, like Adafruit board
   float    getVoltage_V(void);     /// Returns bus voltage in volt
   int      getCurrent_mA(void);       /// Returns current in mA, /!\ we dont deal with the sign
+  void     setZero(int offetMa);
 
   void     setMultiSampling(int v){_multiSampling=v;reconfigure();} // this is 2^n sample : 0=>1 sample, 1=> 2 sample....4=>16 samples
   void     autoZero(); // Call this automatically set the zero offset, BE 100% SURE NO CURRENT IS FLOWING !
